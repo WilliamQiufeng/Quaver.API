@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using MoonSharp.Interpreter;
 using MoonSharp.Interpreter.Interop;
 using Quaver.API.Enums;
@@ -19,7 +20,7 @@ namespace Quaver.API.Maps.Structures
     /// </summary>
     [Serializable]
     [MoonSharpUserData]
-    public class TimingPointInfo
+    public class TimingPointInfo : IBinarySerializable<TimingPointInfo>
     {
         /// <summary>
         ///     The time in milliseconds for when this timing point begins
@@ -98,5 +99,20 @@ namespace Quaver.API.Maps.Structures
         }
 
         public static IEqualityComparer<TimingPointInfo> ByValueComparer { get; } = new ByValueEqualityComparer();
+        public void Serialize(BinaryWriter writer)
+        {
+            writer.Write(StartTime);
+            writer.Write(Bpm);
+            writer.Write((byte)Signature);
+            writer.Write(Hidden);
+        }
+
+        public void Parse(BinaryReader reader)
+        {
+            StartTime = reader.ReadSingle();
+            Bpm = reader.ReadSingle();
+            Signature = (TimeSignature)reader.ReadByte();
+            Hidden = reader.ReadBoolean();
+        }
     }
 }

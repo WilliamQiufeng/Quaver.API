@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  * Copyright (c) 2017-2019 Swan & The Quaver Team <support@quavergame.com>.
-*/
+ */
 
 using System;
 using System.Collections.Generic;
@@ -26,7 +26,7 @@ using YamlDotNet.Serialization;
 namespace Quaver.API.Maps
 {
     [Serializable]
-    public class Qua
+    public class Qua : IBinarySerializable<Qua>
     {
         /// <summary>
         ///     The name of the audio file
@@ -248,6 +248,16 @@ namespace Quaver.API.Maps
             return qua;
         }
 
+        public static Qua ParseBinary(byte[] buffer, bool checkValidity = true)
+        {
+            var qua = new Qua();
+            qua.Parse(new BinaryReader(new MemoryStream(buffer)));
+            RestoreDefaultValues(qua);
+            AfterLoad(qua, checkValidity);
+
+            return qua;
+        }
+
         /// <summary>
         ///     Takes in a path to a .qua file and attempts to parse it.
         ///     Will throw an error if unable to be parsed.
@@ -257,20 +267,35 @@ namespace Quaver.API.Maps
         public static Qua Parse(string path, bool checkValidity = true)
         {
             Qua qua;
-
-            using (var file = File.OpenText(path))
+            if (Path.GetExtension(path) == ".qb")
             {
+                qua = new Qua();
+                using var file = File.OpenRead(path);
+                using var binaryReader = new BinaryReader(file);
+                qua.Parse(binaryReader);
+            }
+            else
+            {
+                using var file = File.OpenText(path);
                 var deserializer = new DeserializerBuilder();
                 deserializer.IgnoreUnmatchedProperties();
                 qua = (Qua)deserializer.Build().Deserialize(file, typeof(Qua));
                 qua.FilePath = path;
-
-                RestoreDefaultValues(qua);
             }
 
+            RestoreDefaultValues(qua);
             AfterLoad(qua, checkValidity);
 
             return qua;
+        }
+
+        public byte[] SerializeBinary()
+        {
+            var memoryStream = new MemoryStream();
+            var writer = new BinaryWriter(memoryStream);
+            Serialize(writer);
+            writer.Close();
+            return memoryStream.GetBuffer();
         }
 
         /// <summary>
@@ -353,9 +378,9 @@ namespace Quaver.API.Maps
             // the bookmarks in the file.
             if (Bookmarks.Count == 0)
                 Bookmarks = null;
-            
+
             var serializer = new Serializer();
-            var stringWriter = new StringWriter {NewLine = "\r\n"};
+            var stringWriter = new StringWriter { NewLine = "\r\n" };
             serializer.Serialize(stringWriter, this);
             var serialized = stringWriter.ToString();
 
@@ -372,7 +397,12 @@ namespace Quaver.API.Maps
         ///     Serializes the Qua object and writes it to a file
         /// </summary>
         /// <param name="path"></param>
-        public void Save(string path) => File.WriteAllText(path, Serialize());
+        public void Save(string path)
+        {
+            var binaryPath = Path.ChangeExtension(path, "qb");
+            File.WriteAllText(path, Serialize());
+            File.WriteAllBytes(binaryPath, SerializeBinary());
+        }
 
         /// <summary>
         ///     If the .qua file is actually valid.
@@ -550,7 +580,7 @@ namespace Quaver.API.Maps
                 if (point.StartTime > lastTime)
                     continue;
 
-                var duration = (int) (lastTime - (i == 0 ? 0 : point.StartTime));
+                var duration = (int)(lastTime - (i == 0 ? 0 : point.StartTime));
                 lastTime = point.StartTime;
 
                 if (durations.ContainsKey(point.Bpm))
@@ -667,6 +697,7 @@ namespace Quaver.API.Maps
                 if (hitObject.IsLongNote)
                     importantTimestamps.Add(hitObject.EndTime);
             }
+
             importantTimestamps.Sort();
             var nextImportantTimestampIndex = 0;
 
@@ -793,7 +824,7 @@ namespace Quaver.API.Maps
                     // For example, consider a fast section of the map transitioning into a very low BPM ending starting
                     // with the next hit object. Since the LN release and the gap are still in the fast section, they
                     // should use the fast section's BPM.
-                    if ((int) Math.Round(timingPoint.StartTime) == nextObjectInLane.StartTime)
+                    if ((int)Math.Round(timingPoint.StartTime) == nextObjectInLane.StartTime)
                     {
                         var prevTimingPointIndex = TimingPoints.FindLastIndex(x => x.StartTime < timingPoint.StartTime);
 
@@ -810,7 +841,7 @@ namespace Quaver.API.Maps
                     }
 
                     // The time gap is quarter of the milliseconds per beat.
-                    timeGap = (int?) Math.Max(Math.Round(15000 / bpm), MINIMAL_GAP_LENGTH);
+                    timeGap = (int?)Math.Max(Math.Round(15000 / bpm), MINIMAL_GAP_LENGTH);
                 }
 
                 // Summary of the changes:
@@ -952,7 +983,7 @@ namespace Quaver.API.Maps
         public void MirrorHitObjects()
         {
             var keyCount = GetKeyCount();
-            
+
             for (var i = 0; i < HitObjects.Count; i++)
             {
                 var temp = HitObjects[i];
@@ -1085,7 +1116,8 @@ namespace Quaver.API.Maps
         private static void AfterLoad(Qua qua, bool checkValidity)
         {
             if (checkValidity && !qua.IsValid())
-                throw new ArgumentException("The .qua file is invalid. It does not have HitObjects, TimingPoints, its Mode is invalid or some hit objects are invalid.");
+                throw new ArgumentException(
+                    "The .qua file is invalid. It does not have HitObjects, TimingPoints, its Mode is invalid or some hit objects are invalid.");
 
             // Try to sort the Qua before returning.
             qua.Sort();
@@ -1350,7 +1382,7 @@ namespace Quaver.API.Maps
         /// <returns></returns>
         public Qua WithNormalizedSVs()
         {
-            var qua = (Qua) MemberwiseClone();
+            var qua = (Qua)MemberwiseClone();
             // Relies on NormalizeSVs not changing anything within the by-reference members (but rather creating a new List).
             qua.NormalizeSVs();
             return qua;
@@ -1362,7 +1394,7 @@ namespace Quaver.API.Maps
         /// <returns></returns>
         public Qua WithDenormalizedSVs()
         {
-            var qua = (Qua) MemberwiseClone();
+            var qua = (Qua)MemberwiseClone();
             // Relies on DenormalizeSVs not changing anything within the by-reference members (but rather creating a new List).
             qua.DenormalizeSVs();
             return qua;
@@ -1398,6 +1430,64 @@ namespace Quaver.API.Maps
                 return null;
 
             return $"{Path.GetDirectoryName(FilePath)}/{AudioFile}";
+        }
+
+        public void Serialize(BinaryWriter writer)
+        {
+            writer.Write(AudioFile ?? "");
+            writer.Write(SongPreviewTime);
+            writer.Write(BackgroundFile ?? "");
+            writer.Write(BannerFile ?? "");
+            writer.Write(MapId);
+            writer.Write(MapSetId);
+            writer.Write((int)Mode);
+            writer.Write(Title ?? "");
+            writer.Write(Artist ?? "");
+            writer.Write(Source ?? "");
+            writer.Write(Tags ?? "");
+            writer.Write(Creator ?? "");
+            writer.Write(DifficultyName ?? "");
+            writer.Write(Description ?? "");
+            writer.Write(Genre ?? "");
+            writer.Write(BPMDoesNotAffectScrollVelocity);
+            writer.Write(InitialScrollVelocity);
+            writer.Write(HasScratchKey);
+            EditorLayers.Serialize(writer);
+            Bookmarks.Serialize(writer);
+            CustomAudioSamples.Serialize(writer);
+            SoundEffects.Serialize(writer);
+            TimingPoints.Serialize(writer);
+            SliderVelocities.Serialize(writer);
+            HitObjects.Serialize(writer);
+        }
+
+        public void Parse(BinaryReader reader)
+        {
+            AudioFile = reader.ReadString();
+            SongPreviewTime = reader.ReadInt32();
+            BackgroundFile = reader.ReadString();
+            BannerFile = reader.ReadString();
+            MapId = reader.ReadInt32();
+            MapSetId = reader.ReadInt32();
+            Mode = (GameMode)reader.ReadInt32();
+            Title = reader.ReadString();
+            Artist = reader.ReadString();
+            Source = reader.ReadString();
+            Tags = reader.ReadString();
+            Creator = reader.ReadString();
+            DifficultyName = reader.ReadString();
+            Description = reader.ReadString();
+            Genre = reader.ReadString();
+            BPMDoesNotAffectScrollVelocity = reader.ReadBoolean();
+            InitialScrollVelocity = reader.ReadSingle();
+            HasScratchKey = reader.ReadBoolean();
+            EditorLayers = BinarySerializerExtensions.ReadList<EditorLayerInfo>(reader);
+            Bookmarks = BinarySerializerExtensions.ReadList<BookmarkInfo>(reader);
+            CustomAudioSamples = BinarySerializerExtensions.ReadList<CustomAudioSampleInfo>(reader);
+            SoundEffects = BinarySerializerExtensions.ReadList<SoundEffectInfo>(reader);
+            TimingPoints = BinarySerializerExtensions.ReadList<TimingPointInfo>(reader);
+            SliderVelocities = BinarySerializerExtensions.ReadList<SliderVelocityInfo>(reader);
+            HitObjects = BinarySerializerExtensions.ReadList<HitObjectInfo>(reader);
         }
     }
 }

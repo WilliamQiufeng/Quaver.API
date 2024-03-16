@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using MoonSharp.Interpreter;
 using MoonSharp.Interpreter.Interop;
 using YamlDotNet.Serialization;
@@ -9,7 +10,7 @@ namespace Quaver.API.Maps.Structures
 {
     [Serializable]
     [MoonSharpUserData]
-    public class EditorLayerInfo
+    public class EditorLayerInfo : IBinarySerializable<EditorLayerInfo>
     {
         /// <summary>
         ///     The name of the layer
@@ -75,5 +76,17 @@ namespace Quaver.API.Maps.Structures
         }
 
         public static IEqualityComparer<EditorLayerInfo> ByValueComparer { get; } = new ByValueEqualityComparer();
+        public void Serialize(BinaryWriter writer)
+        {
+            writer.Write(Name);
+            writer.Write(Hidden);
+            writer.Write(ColorRgb);
+        }
+        public void Parse(BinaryReader reader)
+        {
+            Name = reader.ReadString();
+            Hidden = reader.ReadBoolean();
+            ColorRgb = reader.ReadString();
+        }
     }
 }

@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using MoonSharp.Interpreter;
 using MoonSharp.Interpreter.Interop;
+using osu.Shared;
+using Quaver.API.Enums;
 
 namespace Quaver.API.Maps.Structures
 {
     [MoonSharpUserData]
     [Serializable]
-    public class BookmarkInfo
+    public class BookmarkInfo : IBinarySerializable<BookmarkInfo>
     {
         public int StartTime
         {
@@ -19,6 +22,17 @@ namespace Quaver.API.Maps.Structures
         {
             get; 
             [MoonSharpVisible(false)] set;
+        }
+        public void Serialize(BinaryWriter writer)
+        {
+            writer.Write(StartTime);
+            writer.Write(Note);
+        }
+
+        public void Parse(BinaryReader reader)
+        {
+            StartTime = reader.ReadInt32();
+            Note = reader.ReadString();
         }
 
         private sealed class TimeNoteEqualityComparer : IEqualityComparer<BookmarkInfo>

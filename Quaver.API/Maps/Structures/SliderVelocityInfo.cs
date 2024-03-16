@@ -7,8 +7,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using MoonSharp.Interpreter;
 using MoonSharp.Interpreter.Interop;
+using osu.Shared;
+using Quaver.API.Enums;
 using YamlDotNet.Serialization;
 
 namespace Quaver.API.Maps.Structures
@@ -18,7 +21,7 @@ namespace Quaver.API.Maps.Structures
     /// </summary>
     [Serializable]
     [MoonSharpUserData]
-    public class SliderVelocityInfo
+    public class SliderVelocityInfo : IBinarySerializable<SliderVelocityInfo>
     {
         /// <summary>
         ///     The time in milliseconds when the new SliderVelocity section begins
@@ -37,7 +40,17 @@ namespace Quaver.API.Maps.Structures
             get;
             [MoonSharpVisible(false)] set;
         }
+        public void Serialize(BinaryWriter writer)
+        {
+            writer.Write(StartTime);
+            writer.Write(Multiplier);
+        }
 
+        public void Parse(BinaryReader reader)
+        {
+            StartTime = reader.ReadSingle();
+            Multiplier = reader.ReadSingle();
+        }
         /// <summary>
         ///     Returns if the SV is allowed to be edited in lua scripts
         /// </summary>
