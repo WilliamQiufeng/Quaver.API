@@ -160,6 +160,8 @@ namespace Quaver.API.Maps
         /// </summary>
         public List<SliderVelocityInfo> SliderVelocities { get; private set; } = new List<SliderVelocityInfo>();
 
+        public List<LaneXInfo> LaneXChanges { get; private set; } = new();
+
         /// <summary>
         ///     HitObject .qua data
         /// </summary>
@@ -216,6 +218,7 @@ namespace Quaver.API.Maps
                    && Genre == other.Genre
                    && TimingPoints.SequenceEqual(other.TimingPoints, TimingPointInfo.ByValueComparer)
                    && SliderVelocities.SequenceEqual(other.SliderVelocities, SliderVelocityInfo.ByValueComparer)
+                   && LaneXChanges.SequenceEqual(other.LaneXChanges, LaneXInfo.ByValueComparer)
                    // ReSharper disable once CompareOfFloatsByEqualityOperator
                    && InitialScrollVelocity == other.InitialScrollVelocity
                    && BPMDoesNotAffectScrollVelocity == other.BPMDoesNotAffectScrollVelocity
@@ -435,6 +438,7 @@ namespace Quaver.API.Maps
             HitObjects = HitObjects.OrderBy(x => x.StartTime).ToList();
             TimingPoints = TimingPoints.OrderBy(x => x.StartTime).ToList();
             SliderVelocities = SliderVelocities.OrderBy(x => x.StartTime).ToList();
+            LaneXChanges = LaneXChanges.OrderBy(x => x.Time).ToList();
             SoundEffects = SoundEffects.OrderBy(x => x.StartTime).ToList();
             Bookmarks = Bookmarks.OrderBy(x => x.StartTime).ToList();
         }
