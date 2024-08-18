@@ -581,6 +581,35 @@ namespace Quaver.API.Maps.Processors.Difficulty.Rulesets.Keys
                 l = r + 1;
             }
 
+            
+            var bins2 = new List<float>();
+
+            for (var i = mapStart; i < mapEnd; i += binSize)
+            {
+                var valuesInBin = StrainSolverData.Where(s => s.StartTime >= i && s.StartTime < i + binSize).ToList();
+                var averageRating = valuesInBin.Count > 0 ? valuesInBin.Average(s => s.TotalStrainValue) : 0;
+
+                bins2.Add(averageRating);
+            }
+
+            if (!bins.SequenceEqual(bins2))
+            {
+                var sb = new StringBuilder();
+                if (bins.Count != bins2.Count)
+                {
+                    sb.AppendLine($"Mismatch of count: {bins.Count} != {bins2.Count}");
+                }
+                var count = MathF.Min(bins.Count, bins2.Count);
+                for (var i = 0; i < count; i++)
+                {
+                    if (bins[i] != bins2[i])
+                    {
+                        sb.AppendLine($"bin {i} mismatch: {bins[i]} != {bins2[i]}");
+                    }
+                }
+                throw new ApplicationException($"Mismatch between difficulty: {sb}");
+            }
+
             if (!bins.Any(strain => strain > 0)) return 0;
 
             /*
