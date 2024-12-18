@@ -170,6 +170,9 @@ namespace Quaver.API.Helpers
                     case ModIdentifier.TrueMirror:
                         modStrings.Add("TMR");
                         break;
+                    case ModIdentifier.MemoryFactory:
+                        modStrings.Add("MF");
+                        break;
                     default:
                         throw new ArgumentOutOfRangeException($"Short string for ModIdentifier: {mod} does not exist.");
                 }
