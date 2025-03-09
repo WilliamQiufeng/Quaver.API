@@ -97,6 +97,13 @@ namespace Quaver.API.Maps.Processors.Difficulty.Rulesets.Keys.Structures
         /// </summary>
         public FingerState FingerState { get; private set; } = FingerState.None;
 
+        public StrainSolverData(float startTime, float endTime, float totalStrainValue)
+        {
+            StartTime = startTime;
+            EndTime = endTime;
+            TotalStrainValue = totalStrainValue;
+        }
+
         /// <summary>
         ///     Data used to represent a point in time and other variables that influence difficulty.
         /// </summary>

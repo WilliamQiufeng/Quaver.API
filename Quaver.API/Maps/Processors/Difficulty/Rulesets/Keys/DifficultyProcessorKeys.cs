@@ -21,7 +21,7 @@ namespace Quaver.API.Maps.Processors.Difficulty.Rulesets.Keys
     /// <summary>
     ///     Will be used to solve Strain Rating.
     /// </summary>
-    public class DifficultyProcessorKeys : DifficultyProcessor
+    public class DifficultyProcessorKeys2 : DifficultyProcessor
     {
         /// <summary>
         ///     The version of the processor.
@@ -110,7 +110,7 @@ namespace Quaver.API.Maps.Processors.Difficulty.Rulesets.Keys
         /// <param name="constants"></param>
         /// <param name="mods"></param>
         /// <param name="detailedSolve"></param>
-        public DifficultyProcessorKeys(Qua map, StrainConstants constants, ModIdentifier mods = ModIdentifier.None,
+        public DifficultyProcessorKeys2(Qua map, StrainConstants constants, ModIdentifier mods = ModIdentifier.None,
             bool detailedSolve = false) : base(map, constants, mods)
         {
             // Cast the current Strain Constants Property to the correct type.
