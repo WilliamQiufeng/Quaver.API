@@ -48,6 +48,11 @@ namespace Quaver.API.Maps.AutoMod
         public const int OverlappingObjectsThreshold = 10;
 
         /// <summary>
+        ///     The minimum amount of time in milliseconds between a mine and a note
+        /// </summary>
+        public const int OverlappingMineThreshold = 36;
+
+        /// <summary>
         ///     The amount of time in milliseconds where a break would be considered too excessive
         ///     and against the ranking criteria.
         /// </summary>
@@ -177,6 +182,26 @@ namespace Quaver.API.Maps.AutoMod
                 {
                     previousNoteInColumns[laneIndex] = hitObject;
                     continue;
+                }
+
+                // Check for mines overlapping with notes
+                switch ((prevColObject.Type, hitObject.Type))
+                {
+                    case (HitObjectType.Mine, HitObjectType.Normal):
+                    case (HitObjectType.Normal, HitObjectType.Mine):
+                        {
+                            var prevEndTime = prevColObject.IsLongNote
+                                ? prevColObject.EndTime
+                                : prevColObject.StartTime;
+                            if (hitObject.StartTime - prevEndTime <= OverlappingMineThreshold)
+                            {
+                                var issue = prevColObject.Type is HitObjectType.Mine
+                                    ? new AutoModIssueOverlappingMine(prevColObject, hitObject)
+                                    : new AutoModIssueOverlappingMine(hitObject, prevColObject);
+                                Issues.Add(issue);
+                            }
+                            break;
+                        }
                 }
 
                 // Check for long note overlaps
