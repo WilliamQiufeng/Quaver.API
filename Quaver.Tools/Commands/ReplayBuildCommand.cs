@@ -31,9 +31,9 @@ namespace Quaver.Tools.Commands
         /// <param name="args"></param>
         public ReplayBuildCommand(string[] args) : base(args)
         {
-            // Everything @ index 18 and over are considered the username.
+            // Everything @ index 19 and over are considered the username.
             var username = args.ToList();
-            username.RemoveRange(0, 18);
+            username.RemoveRange(0, 19);
 
             Replay = new Replay(args[1], true)
             {
